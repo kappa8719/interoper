@@ -1,7 +1,4 @@
-use std::{
-    path::Path,
-    process::{Command, Stdio},
-};
+use std::{path::Path, process::Command};
 
 use anyhow::Ok;
 
@@ -12,11 +9,11 @@ pub struct Npm;
 
 impl Backend for Npm {
     fn install(&self, dir: &Path) -> anyhow::Result<()> {
-        let output = Command::new("npm")
+        Command::new("npm")
             .arg("install")
             .current_dir(dir)
-            .output()?;
-        println!("{output:?}");
+            .status()?
+            .exit_ok()?;
 
         Ok(())
     }

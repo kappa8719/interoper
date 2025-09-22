@@ -14,7 +14,8 @@ impl Backend for Local {
         Command::new(self.executable.as_str())
             .arg("install")
             .current_dir(dir)
-            .output()?;
+            .status()?
+            .exit_ok()?;
 
         Ok(())
     }

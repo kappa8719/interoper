@@ -12,7 +12,8 @@ impl Backend for Pnpm {
         Command::new("pnpm")
             .arg("install")
             .current_dir(dir)
-            .output()?;
+            .status()?
+            .exit_ok()?;
 
         Ok(())
     }

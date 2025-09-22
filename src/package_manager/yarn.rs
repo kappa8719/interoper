@@ -9,7 +9,7 @@ pub struct Yarn;
 
 impl Backend for Yarn {
     fn install(&self, dir: &Path) -> anyhow::Result<()> {
-        Command::new("yarn").current_dir(dir).output()?;
+        Command::new("yarn").current_dir(dir).status()?.exit_ok()?;
 
         Ok(())
     }
