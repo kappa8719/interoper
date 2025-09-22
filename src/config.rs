@@ -88,9 +88,9 @@ impl DependencySpec {
                 version,
             } => {
                 if let Some(name) = name {
-                    format!("{key}@{registry}:{name}@{version}")
+                    format!("{registry}:{name}@{version}")
                 } else {
-                    format!("{key}@{registry}:{key}@{version}")
+                    format!("{registry}:{key}@{version}")
                 }
             }
             DependencySpec::Url { url } => url.clone(),
