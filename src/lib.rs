@@ -47,18 +47,41 @@ pub fn build_from_config(config: &Config) -> anyhow::Result<Project> {
     package_manager.install(workdir.as_path())?;
 
     let node_modules = workdir.join("node_modules");
-    let dependencies = std::fs::read_dir(node_modules)?
-        .filter_map(|v| v.ok())
-        .filter_map(|v| {
-            let path = v.path();
-            let key = path.file_name()?.to_str()?;
-            let key = key.to_string();
-
-            if !config.dependencies.contains_key(&key) || !v.metadata().ok()?.is_dir() {
-                return None;
+    // let dependencies = std::fs::read_dir(node_modules)?
+    //     .filter_map(|v| v.ok())
+    //     .filter_map(|v| {
+    //         let path = v.path();
+    //         let key = path.file_name()?.to_str()?;
+    //         let key = key.to_string();
+    //
+    //         if !config.dependencies.contains_key(&key) || !v.metadata().ok()?.is_dir() {
+    //             return None;
+    //         }
+    //
+    //         Some((key.to_string(), path))
+    //     })
+    //     .collect::<HashMap<_, _>>();
+    let dependencies = config
+        .dependencies
+        .iter()
+        .filter_map(|(name, _)| {
+            // the dependency is scoped package
+            if name.starts_with("@") && name.contains("/") {
+                let (scope, package) = name.split_once("/")?;
+                let path = node_modules.join(scope).join(package);
+                if path.exists() {
+                    Some((name.clone(), path))
+                } else {
+                    None
+                }
+            } else {
+                let path = node_modules.join(name);
+                if path.exists() {
+                    Some((name.clone(), path))
+                } else {
+                    None
+                }
             }
-
-            Some((key.to_string(), path))
         })
         .collect::<HashMap<_, _>>();
 
