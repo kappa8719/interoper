@@ -7,17 +7,87 @@ use std::{
     str::FromStr,
 };
 
+use anyhow::anyhow;
+
 use crate::config::Config;
 
 mod config;
 mod node;
 mod package_manager;
 
+fn walk_dir(path: impl AsRef<Path>) -> std::io::Result<Vec<PathBuf>> {
+    let mut buffer = vec![];
+    for entry in std::fs::read_dir(path)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            let walk = walk_dir(path)?;
+            buffer.extend(walk);
+        } else {
+            buffer.push(path);
+        }
+    }
+
+    Ok(buffer)
+}
+
 /// A project which is built from given [Config]
 #[derive(Debug)]
 pub struct Project {
     /// Paths to installed dependencies by their key
     pub dependencies: HashMap<String, PathBuf>,
+}
+
+impl Project {
+    pub fn build_templates(
+        &self,
+        source: impl AsRef<Path>,
+        destination: impl AsRef<Path>,
+    ) -> anyhow::Result<()> {
+        let source = source.as_ref();
+        let destination = destination.as_ref();
+
+        if !source.exists() || !source.is_dir() {
+            return Err(anyhow!(
+                "the source directory does not exist or not a directory"
+            ));
+        }
+        std::fs::create_dir_all(destination)?;
+
+        for path in walk_dir(source)? {
+            // the path relative to source directory
+            let path_relative = path.strip_prefix(source)?;
+            let output = destination.join(path_relative);
+
+            self.build_template(path, output)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn build_template(
+        &self,
+        source: impl AsRef<Path>,
+        destination: impl AsRef<Path>,
+    ) -> anyhow::Result<()> {
+        let source = source.as_ref();
+        let destination = destination.as_ref();
+
+        let mut compiled = std::fs::read_to_string(source)?;
+        for (key, path) in self.dependencies.iter() {
+            let pattern = format!("{{{{ interoper:{key} }}}}");
+            let path = path.canonicalize()?;
+            let Some(path) = path.as_path().to_str() else {
+                return Err(anyhow!("failed to canonicalize path of dependency {key}"));
+            };
+
+            compiled = compiled.replace(pattern.as_str(), path);
+        }
+
+        std::fs::write(destination, compiled)?;
+
+        Ok(())
+    }
 }
 
 pub fn build() -> anyhow::Result<Project> {
