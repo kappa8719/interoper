@@ -9,7 +9,6 @@ impl Backend for Auto {
     fn install(&self, dir: &Path) -> anyhow::Result<()> {
         let backends: [&dyn Backend; 4] = [&Bun, &Pnpm, &Yarn, &Npm];
         for backend in backends {
-            println!("using backend {backend:?}");
             if backend.install(dir).is_ok() {
                 println!("install succeed");
                 return Ok(());
