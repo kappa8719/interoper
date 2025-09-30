@@ -1,2 +1,6 @@
+# Rust
+/Cargo.lock
 /target
+
+# LSP
 .bacon-locations
